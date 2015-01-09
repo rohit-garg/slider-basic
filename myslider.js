@@ -6,6 +6,10 @@
 
         this.settings = $.extend({
             cyclic: false,
+            auto: false,
+            default: 4000,
+            slideInterval: 300,
+            css: {sWrapper: 'slider-wrapper', active: 'active', main: 'mySlider', pagination: 'pagination', navigation: 'navigation', 'prev': 'prev', next: 'next'},
             jQMSwipeEnabled: false
         }, opt);
 
@@ -17,8 +21,10 @@
         var parent;
         var paginationEle;
         var viewPortWidth = $(window).width();
+        var timer;
+        var callbackArr = {afterInit: [], slideChange: []};
         var init = function () {
-            element.wrap('<div class="slider-wrapper" />');
+            element.wrap('<div class="' + $this.settings.css.sWrapper + '" />');
             parent = element.parent();
             $this.setCSS();
             $this.createNavigation();
@@ -32,6 +38,7 @@
                     $this.prev();
                 });
             }
+            fireCallback('afterInit');
         };
 
         this.next = function () {
@@ -39,7 +46,7 @@
                 current = (current + 1) % len;
             }
             else {
-                current = (current + 1) > (len - 1) ? current : (current + 1)
+                current = (current + 1) > (len - 1) ? current : (current + 1);
             }
             this.show(current);
         };
@@ -55,23 +62,35 @@
         };
 
         this.show = function (num) {
+            $this.startTimer();
             this.current = num;
             current = parseInt(num);
-            element.stop('', true, true).animate({'margin-left': '-' + current * viewPortWidth})
-            paginationEle.children().removeClass('active').eq(current).addClass('active');
+            element.stop('', true, true).animate({'margin-left': '-' + current * viewPortWidth}, $this.settings.slideInterval);
+            paginationEle.children().removeClass($this.settings.css.active).eq(current).addClass($this.settings.css.active);
+            fireCallback('slideChange');
+        };
+
+        this.startTimer = function () {
+            clearInterval(timer);
+            if ($this.settings.auto == true) {
+                var interval = $this.settings.default + $this.settings.slideInterval;
+                timer = setInterval(function () {
+                    $this.next();
+                }, interval);
+            }
         };
 
         this.setCSS = function () {
             viewPortWidth = $(window).width();
             parent.css({'width': viewPortWidth, 'overflow': 'hidden'});
-            element.addClass('mySlider').css({'width': function () {
-                    return  viewPortWidth * len
-                }});
+            element.addClass($this.settings.css.main).css({'width': function () {
+                    return  viewPortWidth * len;
+                }, overflow: 'hidden'});
             element.children().css({'width': viewPortWidth, 'float': 'left'});
         };
 
         this.createPagination = function () {
-            var $ul = $('<ul class="pagination"/>');
+            var $ul = $('<ul class="' + $this.settings.css.pagination + '"/>');
             $.each(children, function (i) {
                 var $a = $('<a data-slide="' + i + '" href="#">' + (i + 1) + '</a>').click(function (e) {
                     e.preventDefault();
@@ -85,17 +104,31 @@
         };
 
         this.createNavigation = function () {
-            var $cont = $('<div class="navigation"/>');
-            var $prev = $('<a class="prev" href="#">Prev</a>').click(function (e) {
+            var $cont = $('<div class="' + $this.settings.css.navigation + '"/>');
+            var $prev = $('<a class="' + $this.settings.css.prev + '" href="#">Prev</a>').click(function (e) {
                 e.preventDefault();
                 $this.prev();
             });
-            var $next = $('<a class="prev" href="#">Next</a>').click(function (e) {
+            var $next = $('<a class="' + $this.settings.css.next + '" href="#">Next</a>').click(function (e) {
                 e.preventDefault();
                 $this.next();
             });
             $cont.append($prev, $next);
             parent.append($cont);
+        };
+
+        this.on = function (type, cb) {
+            if (callbackArr[type]) {
+                callbackArr[type].push(cb);
+            }
+        };
+
+        var fireCallback = function (key, arg) {
+            if ((typeof callbackArr[key]) != "undefined") {
+                for (var i = 0; i < callbackArr[key].length; i++) {
+                    callbackArr[key][i].apply($this, arg);
+                }
+            }
         };
 
         $(window).resize(function ()
@@ -122,6 +155,5 @@
         }
     });
 })(jQuery, window);
-
 
 
