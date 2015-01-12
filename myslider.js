@@ -9,6 +9,10 @@
             auto: false,
             default: 4000,
             slideInterval: 300,
+            onInit: function () {
+            },
+            onChange: function () {
+            },
             css: {sWrapper: 'slider-wrapper', active: 'active', main: 'mySlider', pagination: 'pagination', navigation: 'navigation', 'prev': 'prev', next: 'next'},
             jQMSwipeEnabled: false
         }, opt);
@@ -22,11 +26,11 @@
         var paginationEle;
         var viewPortWidth = $(window).width();
         var timer;
-        var callbackArr = {afterInit: [], slideChange: []};
+        var callbackArr = {onInit: [this.settings.onInit], onChange: [this.settings.onChange]};
         var init = function () {
             element.wrap('<div class="' + $this.settings.css.sWrapper + '" />');
             parent = element.parent();
-            $this.setCSS();
+            setCSS();
             $this.createNavigation();
             $this.createPagination();
             $this.show(current);
@@ -38,7 +42,7 @@
                     $this.prev();
                 });
             }
-            fireCallback('afterInit');
+            fireCallback('onInit');
         };
 
         this.next = function () {
@@ -62,15 +66,15 @@
         };
 
         this.show = function (num) {
-            $this.startTimer();
+            startTimer();
             this.current = num;
             current = parseInt(num);
             element.stop('', true, true).animate({'margin-left': '-' + current * viewPortWidth}, $this.settings.slideInterval);
             paginationEle.children().removeClass($this.settings.css.active).eq(current).addClass($this.settings.css.active);
-            fireCallback('slideChange');
+            fireCallback('onChange');
         };
 
-        this.startTimer = function () {
+        var startTimer = function () {
             clearInterval(timer);
             if ($this.settings.auto == true) {
                 var interval = $this.settings.default + $this.settings.slideInterval;
@@ -80,7 +84,7 @@
             }
         };
 
-        this.setCSS = function () {
+        var setCSS = function () {
             viewPortWidth = $(window).width();
             parent.css({'width': viewPortWidth, 'overflow': 'hidden'});
             element.addClass($this.settings.css.main).css({'width': function () {
@@ -131,9 +135,9 @@
             }
         };
 
-        $(window).resize(function ()
+        $(window).on("resize", function ()
         {
-            $this.setCSS();
+            setCSS();
             $this.show(current);
         });
 
